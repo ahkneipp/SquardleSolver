@@ -98,9 +98,20 @@ def parse_input(lines):
 def get_puzzle_letters(puzzle_graph):
     letters = []
     for l in puzzle_graph:
-        if l not in letters:
-            letters.append(l)
+        if l[0] not in letters:
+            letters.append(l[0])
     return letters
+
+def get_ignored_letters(puzzle_graph):
+    ig_letters = []
+    puz_letters = get_puzzle_letters(puzzle_graph)
+    for l in 'abcdefghijklmnopqrstuvwxyz':
+        if l not in puz_letters:
+            ig_letters.append(l)
+    return ig_letters
+
+def solve(puzzle_graph, dictionary):
+    pass
 
 def main():
     line = input()
@@ -111,8 +122,8 @@ def main():
     G = parse_input(lines)
     print(G)
     print(get_puzzle_letters(G))
-    words = create_dict('words_alpha.txt', ignored_letters='eaz')
-    #print_words(words)
+    words = create_dict('words_alpha.txt', min_len=4, ignored_letters=get_ignored_letters(G))
+    print_words(words)
 
 if __name__ == "__main__":
     main()
