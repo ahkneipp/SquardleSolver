@@ -9,19 +9,35 @@
 #Pitfalls to watch out for:
 # - Letters can't be used twice
 
-def create_dict(dict_filename):
+def create_dict(dict_filename, min_len=0, max_len=100000, ignored_letters=''):
     root = ('', {})
     with open(dict_filename) as dict_file:
         for word in dict_file:
-            add_word(root, word.strip())
+            s_word = word.strip()
+            if len(s_word) >= min_len and len(s_word) <= max_len:
+                add_word(root, s_word, ignored_letters)
     return root
 
-def add_word(dict_root, word):
+def add_word(dict_root, word, ignored_letters=''):
     if len(word) == 0:
-        return
+        return True
+    if word[0] in ignored_letters:
+        return False
     if word[0] not in dict_root[1]:
         dict_root[1][word[0]] = (word[0],{})
-    add_word(dict_root[1][word[0]], word[1:])
+    if not add_word(dict_root[1][word[0]], word[1:], ignored_letters):
+        if len(dict_root[1][word[0]][1]) == 0:
+            del dict_root[1][word[0]]
+        return False
+    return True
+
+def print_words(dict_root, so_far=''):
+    if len(dict_root[1]) == 0:
+        print(so_far,end='')
+        print(dict_root[0])
+    else:
+        for e in dict_root[1]:
+            print_words(dict_root[1][e], so_far+dict_root[0])
 
 def print_tree(dict_root):
     for e in dict_root[1]:
@@ -79,6 +95,13 @@ def parse_input(lines):
                     G[(c,row,col)].append((lines[row+1][col+1],row+1,col+1))
     return G
 
+def get_puzzle_letters(puzzle_graph):
+    letters = []
+    for l in puzzle_graph:
+        if l not in letters:
+            letters.append(l)
+    return letters
+
 def main():
     line = input()
     lines = []
@@ -87,8 +110,9 @@ def main():
         line = input()
     G = parse_input(lines)
     print(G)
-    words = create_dict('testdict.txt')
-    print_tree(words)
+    print(get_puzzle_letters(G))
+    words = create_dict('words_alpha.txt', ignored_letters='eaz')
+    #print_words(words)
 
 if __name__ == "__main__":
     main()
