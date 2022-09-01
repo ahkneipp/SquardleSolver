@@ -134,6 +134,7 @@ def get_neighbors(n, puzzle_graph):
 def solve(puzzle_graph, dictionary):
     words = []
     for n in puzzle_graph:
+        print(f'Starting from {n}')
         words.extend(get_words(n, [], dictionary, puzzle_graph))
     return words
 
@@ -141,17 +142,26 @@ def get_word_from_visited(visited):
     w = []
     for v in visited:
         w.append(v[0])
-    return str(w)
+    return ''.join(w)
 
 def get_words(start, visited, dict_node, puzzle_graph):
     words = []
     neighbors = get_neighbors(start, puzzle_graph)
+    print(f'Checking {start}')
     if '' in dict_node[1]:
-        words.append(get_word_from_visited(visited));
+        w = get_word_from_visited(visited)
+        print(f'Reached end of word {w}')
+        words.append(w);
     for n in neighbors:
+        print(f'Attempting to traverse to {n}')
         next_dict_step = get_step(n[0], dict_node)
         if next_dict_step is not None and n not in visited:
             words.extend(get_words(n, visited + [n], next_dict_step, puzzle_graph))
+        else:
+            if next_dict_step is None:
+                print("Could not traverse (invalid word)")
+            elif n in visited:
+                print("Could not traverse (already visited)")
     return words
 
 def main():
@@ -165,7 +175,9 @@ def main():
     print(get_puzzle_letters(G))
     words = create_dict('words_alpha.txt', min_len=4, ignored_letters=get_ignored_letters(G))
     print_words(words)
-    solve(G, words)
+    solutions=solve(G, words)
+    sorted_solutions = sorted(list(set(solutions)))
+    print(sorted_solutions)
 
 if __name__ == "__main__":
     main()
