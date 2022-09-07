@@ -9,6 +9,8 @@
 #Pitfalls to watch out for:
 # - Letters can't be used twice
 
+import sys
+
 def create_dict(dict_filename, min_len=0, max_len=100000, ignored_letters=''):
     """
     :arg dict_filename: The path to the dictionary file to read in.
@@ -32,6 +34,13 @@ def create_dict(dict_filename, min_len=0, max_len=100000, ignored_letters=''):
     return root
 
 def add_word(dict_root, word, ignored_letters=''):
+    """
+    Recursive function to add a word to the dictionary tree
+    :arg dict_root: The node to add the next letter to (See create_dict for a datastructure description)
+    :arg word: The word to recursively add to the tree
+    :arg ignored_letters: String containing the letters which prevent a word from being added
+    :return: True if the word was added, false if it wasn't because it contained a letter in ignored_letters
+    """
     if len(word) == 0:
         dict_root[1][''] = ('', None)
         return True
@@ -46,6 +55,12 @@ def add_word(dict_root, word, ignored_letters=''):
     return True
 
 def print_words(dict_root, so_far=''):
+    """
+    Recursively prints every word in the dictionary tree
+    :arg dict_root: The dictionary tree to print
+    :arg so_far: Should not be included by top-level caller.
+    String of the letters traversed in the tree so far
+    """
     if len(dict_root[0]) == 0:
         print(so_far)
     else:
@@ -53,16 +68,29 @@ def print_words(dict_root, so_far=''):
             print_words(dict_root[1][e], so_far+dict_root[0])
 
 def print_tree(dict_root):
+    """
+    Print a the dictionary tree "tree style" with one letter per line and the number of spaces indicating depth
+    :arg dict_root: The dictionary tree to print
+    """
     for e in dict_root[1]:
         print_tree_node(dict_root[1][e], 0)
 
 def print_tree_node(n, depth):
+    """
+    Recursive support function for print_tree
+    """
     print(' '*depth, end='')
     print(n[0])
     for e in n[1]:
         print_tree_node(n[1][e],depth+1)
 
 def get_input_bounding_box(lines):
+    """
+    Find the size of the input bounding box for non-square squardles.
+    Also, validate input from user to ensure it is rectangular.
+    :arg lines: List of lines input by user.  Each must be the same length
+    :return: Tuple of (rows, columns) in the bounding box, or None if the input is invalid
+    """
     rows = len(lines)
     cols = len(lines[0])
     for l in lines:
@@ -109,6 +137,11 @@ def parse_input(lines):
     return G
 
 def get_puzzle_letters(puzzle_graph):
+    """
+    Get all of the unique letters present in the puzzle
+    :arg puzzle_graph: the Graph representing the puzzle
+    :return: List of the unique letters present in the puzzle.
+    """
     letters = []
     for l in puzzle_graph:
         if l[0] not in letters:
@@ -116,6 +149,9 @@ def get_puzzle_letters(puzzle_graph):
     return letters
 
 def get_ignored_letters(puzzle_graph):
+    """
+    Inverts the letters in the puzzle in the lowercase alphabetic space.
+    """
     ig_letters = []
     puz_letters = get_puzzle_letters(puzzle_graph)
     for l in 'abcdefghijklmnopqrstuvwxyz':
@@ -124,6 +160,12 @@ def get_ignored_letters(puzzle_graph):
     return ig_letters
 
 def get_step(letter, dict_node):
+    """
+    Get the next node in the dictionary tree for the given letter
+    :arg letter: The letter to get the node for
+    :arg dict_node: The current node in the dictionary tree
+    :return: The node corresponding to the given letter, or null if it's an invalid step
+    """
     if letter in dict_node[1]:
         return dict_node[1][letter]
     return None
@@ -132,31 +174,45 @@ def get_neighbors(n, puzzle_graph):
     return puzzle_graph[n]
 
 def solve(puzzle_graph, dictionary):
+    """
+    Recursively solves the puzzle
+    """
     words = []
+    # Try starting from each square in the puzzle
     for n in puzzle_graph:
-        print(f'Starting from {n}')
+        #print(f'Starting from {n}')
         words.extend(get_words(n, [], dictionary, puzzle_graph))
     return words
 
 def get_word_from_visited(visited):
+    """
+    Reconstruct a full word from a list of visited graph nodes in forward order
+    """
     w = []
     for v in visited:
         w.append(v[0])
     return ''.join(w)
 
 def get_words(start, visited, dict_node, puzzle_graph):
+    """
+    Recursive solver for the squardle
+    """
     words = []
     neighbors = get_neighbors(start, puzzle_graph)
     print(f'Checking {start}')
+    # We're currently at the end of the word, add it to the list
     if '' in dict_node[1]:
         w = get_word_from_visited(visited)
         print(f'Reached end of word {w}')
         words.append(w);
+    # recursively (DFS) search each of the neighbors
     for n in neighbors:
         print(f'Attempting to traverse to {n}')
         next_dict_step = get_step(n[0], dict_node)
+        # If the next step can lead to a valid word and hasn't already been visited
         if next_dict_step is not None and n not in visited:
             words.extend(get_words(n, visited + [n], next_dict_step, puzzle_graph))
+        #Debug info about why we didn't take the step
         else:
             if next_dict_step is None:
                 print("Could not traverse (invalid word)")
@@ -165,17 +221,23 @@ def get_words(start, visited, dict_node, puzzle_graph):
     return words
 
 def main():
+    #Grab the puzzle from the user
     line = input()
     lines = []
     while line != "":
         lines.append(line)
         line = input()
+    # Compute the puzzle graph
     G = parse_input(lines)
-    print(G)
-    print(get_puzzle_letters(G))
+    # Graph construction failed, quit
+    if G is None:
+        print("Invalid input!")
+        sys.exit(1)
+    # Create the tree dictionary, ignore words shorter than 4 letters and with letters not in the puzzle
     words = create_dict('words_alpha.txt', min_len=4, ignored_letters=get_ignored_letters(G))
-    print_words(words)
+    #Solve the puzzle
     solutions=solve(G, words)
+    # Get the unique solution words in an ordered list
     sorted_solutions = sorted(list(set(solutions)))
     print(sorted_solutions)
 
